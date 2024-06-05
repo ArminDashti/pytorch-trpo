@@ -1,7 +1,7 @@
 import argparse
 from itertools import count
 
-import gym
+import gymnasium as gym
 import scipy.optimize
 
 import torch
@@ -11,6 +11,8 @@ from running_state import ZFilter
 from torch.autograd import Variable
 from trpo import trpo_step
 from utils import *
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 torch.utils.backcompat.broadcast_warning.enabled = True
 torch.utils.backcompat.keepdim_warning.enabled = True
@@ -20,7 +22,7 @@ torch.set_default_tensor_type('torch.DoubleTensor')
 parser = argparse.ArgumentParser(description='PyTorch actor-critic example')
 parser.add_argument('--gamma', type=float, default=0.995, metavar='G',
                     help='discount factor (default: 0.995)')
-parser.add_argument('--env-name', default="Reacher-v1", metavar='G',
+parser.add_argument('--env-name', default="Reacher-v4", metavar='G',
                     help='name of the environment to run')
 parser.add_argument('--tau', type=float, default=0.97, metavar='G',
                     help='gae (default: 0.97)')
@@ -45,7 +47,7 @@ env = gym.make(args.env_name)
 num_inputs = env.observation_space.shape[0]
 num_actions = env.action_space.shape[0]
 
-env.seed(args.seed)
+# env.seed(args.seed)
 torch.manual_seed(args.seed)
 
 policy_net = Policy(num_inputs, num_actions)
@@ -140,14 +142,14 @@ for i_episode in count(1):
     reward_batch = 0
     num_episodes = 0
     while num_steps < args.batch_size:
-        state = env.reset()
+        state = env.reset()[0]
         state = running_state(state)
 
         reward_sum = 0
         for t in range(10000): # Don't infinite loop while learning
             action = select_action(state)
             action = action.data[0].numpy()
-            next_state, reward, done, _ = env.step(action)
+            next_state, reward, done, _, _ = env.step(action)
             reward_sum += reward
 
             next_state = running_state(next_state)
